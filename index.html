@@ -1,0 +1,150 @@
+<!doctype html><head><title>the dollar game</title>
+<style>body{margin:0;background:white;}</style>
+</head><body>
+<canvas></canvas>
+
+<script>
+  //canvas
+  let canvas   = document.querySelector('canvas');
+  canvas.width = window.innerWidth;
+  canvas.height= window.innerHeight;
+
+  //constants
+  const RADI     = 35; //px
+  const FONTSIZE = 30; //px
+  const N        = 10; //cercles
+
+  //context
+  let c = canvas.getContext('2d');
+  c.font = `${FONTSIZE}px Arial`;
+
+  class Cercle{
+    constructor(x,y){
+      this.x=x;
+      this.y=y;
+      this.radi=RADI;
+      this.money=0;
+      this.links=[]; //array of cirlce objects
+    }
+
+    crea_link(cercle){
+      if(this.links.includes(cercle)){
+        return false;
+      }
+
+      this.links.push(cercle);
+      cercle.links.push(this);
+    }
+
+    dibuixa(){
+      //links
+      this.links.forEach(cercle=>{
+        c.beginPath();
+        c.moveTo(this.x,   this.y);
+        c.lineTo(cercle.x, cercle.y);
+        c.strokeStyle="black";
+        c.lineWidth=1;
+
+        if(this==cercle_seleccionat){
+          c.strokeStyle="blue";
+          c.lineWidth=3;
+        }
+        c.stroke();
+        c.closePath();
+      });
+
+      //cercle
+      c.beginPath();
+      c.arc(this.x,this.y,this.radi,0,2*Math.PI);
+
+      if(this.money<0){
+        c.fillStyle="red";
+      }else{
+        c.fillStyle="#af0";
+      }
+      c.fill();
+      c.closePath();
+
+      //text
+      c.fillStyle="black";
+      let metrics = c.measureText(this.money);
+      let h = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+      c.fillText(this.money,this.x-metrics.width/2,this.y + h/2);
+
+    }
+
+    update(){
+      this.dibuixa();
+    }
+  }
+
+  //crea escena de cercles
+  let cercles=[];
+  for(let i=0;i<N;i++){
+    let x = Math.min(canvas.width -RADI, Math.max(RADI, Math.random()*canvas.width ));
+    let y = Math.min(canvas.height-RADI, Math.max(RADI, Math.random()*canvas.height));
+    let c = new Cercle(x,y);
+    if(i){
+      c.crea_link(cercles[i-1]);
+    }
+
+    if(Math.random()>0.5){
+      c.money=-1;
+    }else{
+      c.money=1;
+    }
+
+    cercles.push(c);
+  }
+
+  //mouse
+  let cercle_seleccionat=null;
+  let sha_mogut = false; //s'ha mogut un cercle? per evitar donar diners
+
+  canvas.addEventListener("mousemove",function(event){
+    let x = event.clientX;
+    let y = event.clientY;
+
+    if(cercle_seleccionat){
+      cercle_seleccionat.x = x;
+      cercle_seleccionat.y = y;
+      sha_mogut = true;
+    }
+  });
+
+  //seleccionar cercle
+  canvas.addEventListener("mousedown",function(event){
+    let x = event.clientX;
+    let y = event.clientY;
+
+    cercle_seleccionat = null;
+    sha_mogut          = false;
+    for(let i=0;i<cercles.length;i++){
+      let c = cercles[i];
+      let distance = Math.sqrt(Math.pow(c.x-x,2)+Math.pow(c.y-y,2));
+      if(distance<RADI){
+        cercle_seleccionat=c;
+        break;
+      }
+    }
+  });
+
+  canvas.addEventListener("mouseup",function(event){
+    let x = event.clientX;
+    let y = event.clientY;
+
+    //només mou diners si no s'ha mogut
+    if(cercle_seleccionat && !sha_mogut){
+      cercle_seleccionat.money -= cercle_seleccionat.links.length;
+      cercle_seleccionat.links.forEach(c=>c.money+=1);
+    }
+
+    cercle_seleccionat=null;
+  });
+
+  (function animate(){
+    requestAnimationFrame(animate);
+    c.clearRect(0,0,canvas.width,canvas.height);
+    cercles.forEach(c=>c.update());
+  })();
+</script>
