@@ -38,9 +38,8 @@
     }
 
     crea_link(cercle){
-      if(this.links.includes(cercle)){
-        return false;
-      }
+      if(this==cercle) return false;
+      if(this.links.includes(cercle)) return false;
 
       this.links.push(cercle);
       cercle.links.push(this);
