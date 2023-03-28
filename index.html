@@ -11,6 +11,7 @@
 </style>
 </head><body>
 <canvas></canvas>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/U33dsEcKgeQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 <script>
   //get canvas element from DOM
@@ -19,20 +20,19 @@
   canvas.height = window.innerHeight;
 
   //constants
+  const N     = 20; //quantitat de cercles
+  const RADI   = 35; //px | radi dels cercles
+  const MARGE   = 20; //px | marge canvas
   const FONTSIZE = 30; //px | font cercle
-  const MARGE    = 20; //px | marge canvas
-  const N        = 10; //quantitat de cercles
-  const RADI     = 35; //px | radi dels cercles
 
   //get canvas context
-  let c = canvas.getContext('2d');
+  let c  = canvas.getContext('2d');
   c.font = `${FONTSIZE}px Helvetica`;
 
   class Cercle{
     constructor(x,y){
       this.x=x;
       this.y=y;
-      this.radi=RADI;
       this.money=0;
       this.links=[]; //array of cirlce objects
     }
@@ -46,6 +46,7 @@
       cercle.links.push(this);
     }
 
+    //dibuixa els links al canvas
     dibuixa_links(){
       this.links.forEach(cercle=>{
         c.beginPath();
@@ -66,9 +67,10 @@
       });
     }
 
+    //dibuixa el cercle al canvas
     dibuixa(){
       c.beginPath();
-      c.arc(this.x,this.y,this.radi,0,2*Math.PI);
+      c.arc(this.x, this.y, RADI,0,2*Math.PI);
 
       if(this.money<0){
         c.fillStyle="red";
@@ -103,19 +105,39 @@
     let x = Math.max(MARGE + RADI, Math.random()*canvas.width  - RADI - MARGE);
     let y = Math.max(MARGE + RADI, Math.random()*canvas.height - RADI - MARGE);
     let c = new Cercle(x,y);
-    if(i){
-      c.crea_link(cercles[i-1]);
-    }
-
-    //TODO
-    if(Math.random()>0.5){
-      c.money=-1;
-    }else{
-      c.money=1;
-    }
-
     cercles.push(c);
+
+    //diners aleatoris (positius o negatius)
+    c.money = Math.floor(Math.random()*N - N/2);
   }
+
+  for(let i=0;i<N;i++){
+    let c = cercles[i];
+
+    let n = 1+Math.floor(3*Math.random());
+    for(let j=0;j<n;j++){
+      let index_random = Math.floor(Math.random()*N);
+      c.crea_link(cercles[index_random]);
+    }
+
+  }
+
+  //calcula suma d'arestes
+  let suma_arestes = cercles.map(c=>c.links.length).reduce((p,c)=>p+c,0)/2;
+
+  //calcula "genus" = arestes - vertexs +1
+  //una partida es podrà guanyar si la suma de diners és com a mínim el genus
+  let genus = suma_arestes - N + 1;
+
+  //calcula suma de diners
+  let suma_dolars = cercles.map(c=>c.money).reduce((p,c)=>p+c,0);
+  while(suma_dolars<genus){
+    let index_random = Math.floor(Math.random()*N);
+    cercles[index_random].money++;
+    suma_dolars = cercles.map(c=>c.money).reduce((p,c)=>p+c,0);
+  }
+
+  console.log({N,suma_dolars,suma_arestes, genus});
 
   //mouse
   let cercle_seleccionat=null;
@@ -123,8 +145,10 @@
 
   //moure mouse
   canvas.addEventListener("mousemove",function(event){
-    let x = event.clientX;
-    let y = event.clientY;
+    let bounding = canvas.getBoundingClientRect();
+
+    let x = event.clientX - bounding.left;
+    let y = event.clientY - bounding.top;
 
     if(cercle_seleccionat){
       cercle_seleccionat.x = x;
@@ -135,8 +159,10 @@
 
   //seleccionar cercle
   canvas.addEventListener("mousedown",function(event){
-    let x = event.clientX;
-    let y = event.clientY;
+    let bounding = canvas.getBoundingClientRect();
+
+    let x = event.clientX - bounding.left;
+    let y = event.clientY - bounding.top;
 
     cercle_seleccionat = null;
     sha_mogut          = false;
@@ -152,22 +178,16 @@
 
   //aixecar click mouse
   canvas.addEventListener("mouseup",function(event){
-    let x = event.clientX;
-    let y = event.clientY;
-
     //mou diners entre cercles
     if(cercle_seleccionat && !sha_mogut){
       cercle_seleccionat.money -= cercle_seleccionat.links.length;
       cercle_seleccionat.links.forEach(c=>c.money+=1);
     }
-
     cercle_seleccionat=null;
   });
 
   //touchstart
   canvas.addEventListener("touchstart",function(event){
-    //console.log("touchstart");
-    //console.log(event.touches);
     if(event.touches.length==0) return;
     event.stopPropagation();
 
@@ -181,7 +201,6 @@
 
   //touchmove
   canvas.addEventListener("touchmove",function(event){
-    //console.log("touchmove");
     if(event.touches.length==0) return;
 
     canvas.dispatchEvent(
