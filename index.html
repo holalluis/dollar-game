@@ -1,22 +1,32 @@
-<!doctype html><head><title>the dollar game</title>
-<style>body{margin:0;background:#666}</style>
+<html><head>
+<title>The Dollar Game</title>
+<style>
+  body{
+    margin:0;
+    background:black;
+  }
+  canvas{
+    background:#666;
+  }
+</style>
 </head><body>
 <canvas></canvas>
 
 <script>
-  //canvas
-  let canvas   = document.querySelector('canvas');
+  //get canvas element from DOM
+  let canvas  = document.querySelector('canvas');
   canvas.width = window.innerWidth;
-  canvas.height= window.innerHeight;
+  canvas.height = window.innerHeight;
 
   //constants
-  const RADI     = 35; //px
-  const FONTSIZE = 30; //px
-  const N        = 10; //cercles
+  const FONTSIZE = 30; //px | font cercle
+  const MARGE    = 20; //px | marge canvas
+  const N        = 10; //quantitat de cercles
+  const RADI     = 35; //px | radi dels cercles
 
-  //context
+  //get canvas context
   let c = canvas.getContext('2d');
-  c.font = `${FONTSIZE}px Arial`;
+  c.font = `${FONTSIZE}px Helvetica`;
 
   class Cercle{
     constructor(x,y){
@@ -90,8 +100,8 @@
   //crea escena de cercles
   let cercles=[];
   for(let i=0;i<N;i++){
-    let x = Math.min(canvas.width -RADI, Math.max(RADI, Math.random()*canvas.width ));
-    let y = Math.min(canvas.height-RADI, Math.max(RADI, Math.random()*canvas.height));
+    let x = Math.max(MARGE + RADI, Math.random()*canvas.width  - RADI - MARGE);
+    let y = Math.max(MARGE + RADI, Math.random()*canvas.height - RADI - MARGE);
     let c = new Cercle(x,y);
     if(i){
       c.crea_link(cercles[i-1]);
@@ -111,6 +121,7 @@
   let cercle_seleccionat=null;
   let sha_mogut = false; //s'ha mogut un cercle? per evitar donar diners
 
+  //moure mouse
   canvas.addEventListener("mousemove",function(event){
     let x = event.clientX;
     let y = event.clientY;
@@ -139,6 +150,7 @@
     }
   });
 
+  //aixecar click mouse
   canvas.addEventListener("mouseup",function(event){
     let x = event.clientX;
     let y = event.clientY;
@@ -152,6 +164,35 @@
     cercle_seleccionat=null;
   });
 
+  //touchstart
+  canvas.addEventListener("touchstart",function(event){
+    //console.log("touchstart");
+    //console.log(event.touches);
+    if(event.touches.length==0) return;
+    event.stopPropagation();
+
+    canvas.dispatchEvent(
+      new MouseEvent("mousedown",{
+        clientX:event.touches[0].clientX,
+        clientY:event.touches[0].clientY,
+      })
+    );
+  });
+
+  //touchmove
+  canvas.addEventListener("touchmove",function(event){
+    //console.log("touchmove");
+    if(event.touches.length==0) return;
+
+    canvas.dispatchEvent(
+      new MouseEvent("mousemove",{
+        clientX:event.touches[0].clientX,
+        clientY:event.touches[0].clientY,
+      })
+    );
+  });
+
+  //animation loop
   (function animate(){
     requestAnimationFrame(animate);
     c.clearRect(0,0,canvas.width,canvas.height);
