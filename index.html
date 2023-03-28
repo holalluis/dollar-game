@@ -27,7 +27,7 @@
 
   //get canvas context
   let c  = canvas.getContext('2d');
-  c.font = `${FONTSIZE}px Helvetica`;
+  c.font = `${FONTSIZE}px Arial`;
 
   class Cercle{
     constructor(x,y){
@@ -70,15 +70,10 @@
     //dibuixa el cercle al canvas
     dibuixa(){
       c.beginPath();
-      c.arc(this.x, this.y, RADI,0,2*Math.PI);
+      c.arc(this.x, this.y, RADI, 0, 2*Math.PI);
+      c.closePath();
 
-      if(this.money<0){
-        c.fillStyle="red";
-      }else{
-        c.fillStyle="#af0";
-      }
-      c.fill();
-
+      //contorn cercle
       if(this==cercle_seleccionat){
         c.strokeStyle="lightblue";
         c.lineWidth=3;
@@ -86,12 +81,17 @@
         c.strokeStyle="black";
         c.lineWidth=1;
       }
-
       c.stroke();
 
-      c.closePath();
+      //interior cercle
+      if(this.money<0){
+        c.fillStyle="red";
+      }else{
+        c.fillStyle="#af0";
+      }
+      c.fill();
 
-      //text centre cercle
+      //text cercle
       if(this.money>=this.links.length){
         c.fillStyle = "blue";
       }else{
