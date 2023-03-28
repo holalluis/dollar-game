@@ -1,5 +1,5 @@
 <!doctype html><head><title>the dollar game</title>
-<style>body{margin:0;background:white;}</style>
+<style>body{margin:0;background:#666}</style>
 </head><body>
 <canvas></canvas>
 
@@ -36,24 +36,27 @@
       cercle.links.push(this);
     }
 
-    dibuixa(){
-      //links
+    dibuixa_links(){
       this.links.forEach(cercle=>{
         c.beginPath();
+
+        if(this==cercle_seleccionat || cercle==cercle_seleccionat){
+          c.strokeStyle="lightblue";
+          c.lineWidth=3;
+        }else{
+          c.strokeStyle="black";
+          c.lineWidth=1;
+        }
+
         c.moveTo(this.x,   this.y);
         c.lineTo(cercle.x, cercle.y);
-        c.strokeStyle="black";
-        c.lineWidth=1;
 
-        if(this==cercle_seleccionat){
-          c.strokeStyle="blue";
-          c.lineWidth=3;
-        }
         c.stroke();
         c.closePath();
       });
+    }
 
-      //cercle
+    dibuixa(){
       c.beginPath();
       c.arc(this.x,this.y,this.radi,0,2*Math.PI);
 
@@ -63,18 +66,24 @@
         c.fillStyle="#af0";
       }
       c.fill();
+
+      if(this==cercle_seleccionat){
+        c.strokeStyle="lightblue";
+        c.lineWidth=3;
+      }else{
+        c.strokeStyle="black";
+        c.lineWidth=1;
+      }
+
+      c.stroke();
+
       c.closePath();
 
-      //text
-      c.fillStyle="black";
+      //text centre cercle
+      c.fillStyle = "black";
       let metrics = c.measureText(this.money);
-      let h = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-      c.fillText(this.money,this.x-metrics.width/2,this.y + h/2);
-
-    }
-
-    update(){
-      this.dibuixa();
+      let height  = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+      c.fillText(this.money, this.x-metrics.width/2, this.y+height/2);
     }
   }
 
@@ -88,6 +97,7 @@
       c.crea_link(cercles[i-1]);
     }
 
+    //TODO
     if(Math.random()>0.5){
       c.money=-1;
     }else{
@@ -122,7 +132,7 @@
     for(let i=0;i<cercles.length;i++){
       let c = cercles[i];
       let distance = Math.sqrt(Math.pow(c.x-x,2)+Math.pow(c.y-y,2));
-      if(distance<RADI){
+      if(distance<=RADI){
         cercle_seleccionat=c;
         break;
       }
@@ -133,7 +143,7 @@
     let x = event.clientX;
     let y = event.clientY;
 
-    //només mou diners si no s'ha mogut
+    //mou diners entre cercles
     if(cercle_seleccionat && !sha_mogut){
       cercle_seleccionat.money -= cercle_seleccionat.links.length;
       cercle_seleccionat.links.forEach(c=>c.money+=1);
@@ -145,6 +155,8 @@
   (function animate(){
     requestAnimationFrame(animate);
     c.clearRect(0,0,canvas.width,canvas.height);
-    cercles.forEach(c=>c.update());
+
+    cercles.forEach(c=>c.dibuixa_links() );
+    cercles.forEach(c=>c.dibuixa()       );
   })();
 </script>
