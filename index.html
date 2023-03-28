@@ -92,7 +92,11 @@
       c.closePath();
 
       //text centre cercle
-      c.fillStyle = "black";
+      if(this.money>=this.links.length){
+        c.fillStyle = "blue";
+      }else{
+        c.fillStyle = "black";
+      }
       let metrics = c.measureText(this.money);
       let height  = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
       c.fillText(this.money, this.x-metrics.width/2, this.y+height/2);
