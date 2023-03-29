@@ -32,13 +32,13 @@
 
   class Cercle{
     constructor(x,y){
-      this.x=x;
-      this.y=y;
+      this.x=x;//posició x
+      this.y=y;//posició y
       this.money=0;
       this.links=[]; //array of cirlce objects
 
-      this.dx=Math.random()-0.5;
-      this.dy=Math.random()-0.5;
+      this.dx=0;//velocitat x
+      this.dy=0;//velocitat y
     }
 
     crea_link(cercle){
@@ -63,24 +63,22 @@
       return {x:fx, y:fy}; //vector força
     }
 
+    //calcula suma de forces rebuda dels links
     forca_atraccio(){
-      //suma de forces rebuda dels links
       let fx=0;
       let fy=0;
       this.links.forEach(c=>{
         let vx = c.x-this.x; //vector distància
         let vy = c.y-this.y; //vector distància
         let r  = Math.sqrt(vx*vx+vy*vy); //distància
-
         fx += K_ATTRAC*vx*Math.log(r);
         fy += K_ATTRAC*vy*Math.log(r);
       });
-
       return {x:fx, y:fy}; //vector força
     }
 
     update_state(){
-      //calculate acceleration
+      //calcula acceleració
       let forces_repulsio = cercles.map(c=>{
         return this.forca_repulsio(c);
       });
@@ -100,6 +98,7 @@
       this.x += this.dx;
       this.y += this.dy;
 
+      //check límits
       if(this.x<RADI+MARGE){
         this.x = RADI+MARGE;
         this.dx *= -1;
@@ -116,7 +115,6 @@
         this.y = canvas.height-RADI-MARGE;
         this.dy *=-1;
       }
-
     }
 
     //dibuixa els links al canvas
