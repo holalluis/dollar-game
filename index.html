@@ -23,6 +23,8 @@
   const RADI   = 35; //px | radi dels cercles
   const MARGE   = 20; //px | marge canvas
   const FONTSIZE = 30; //px | font cercle
+  const K_REPULS = 100; //constant de repulsió
+  const K_ATTRAC = 0.0001; //constant atracció
 
   //get canvas context
   let c  = canvas.getContext('2d');
@@ -34,14 +36,87 @@
       this.y=y;
       this.money=0;
       this.links=[]; //array of cirlce objects
+
+      this.dx=Math.random()-0.5;
+      this.dy=Math.random()-0.5;
     }
 
     crea_link(cercle){
-      if(this==cercle) return false;
+      if(this==cercle)                return false;
       if(this.links.includes(cercle)) return false;
 
       this.links.push(cercle);
       cercle.links.push(this);
+      return true;
+    }
+
+    //calcula força repulsió amb un altre cercle
+    forca_repulsio(c){
+      if(this==c) return {x:0,y:0};
+
+      let vx = this.x-c.x; //vector distància
+      let vy = this.y-c.y; //vector distància
+      let r  = Math.sqrt(vx*vx+vy*vy); //distància
+
+      let fx = K_REPULS*vx/(r*r); //vector força
+      let fy = K_REPULS*vy/(r*r); //vector força
+      return {x:fx, y:fy}; //vector força
+    }
+
+    forca_atraccio(){
+      //suma de forces rebuda dels links
+      let fx=0;
+      let fy=0;
+      this.links.forEach(c=>{
+        let vx = c.x-this.x; //vector distància
+        let vy = c.y-this.y; //vector distància
+        let r  = Math.sqrt(vx*vx+vy*vy); //distància
+
+        fx += K_ATTRAC*vx*Math.log(r);
+        fy += K_ATTRAC*vy*Math.log(r);
+      });
+
+      return {x:fx, y:fy}; //vector força
+    }
+
+    update_state(){
+      //calculate acceleration
+      let forces_repulsio = cercles.map(c=>{
+        return this.forca_repulsio(c);
+      });
+      let forces_atraccio = cercles.map(c=>{
+        return this.forca_atraccio();
+      });
+
+      let forces=[...forces_repulsio, ...forces_atraccio];
+      let suma_forces_x = forces.map(f=>f.x).reduce((p,c)=>p+c,0);
+      let suma_forces_y = forces.map(f=>f.y).reduce((p,c)=>p+c,0);
+
+      //update velocity
+      this.dx = suma_forces_x;
+      this.dy = suma_forces_y;
+
+      //update position
+      this.x += this.dx;
+      this.y += this.dy;
+
+      if(this.x<RADI+MARGE){
+        this.x = RADI+MARGE;
+        this.dx *= -1;
+      }
+      if(this.x>canvas.width-RADI-MARGE){
+        this.x = canvas.width-RADI-MARGE;
+        this.dx *=-1;
+      }
+      if(this.y<RADI+MARGE){
+        this.y = RADI+MARGE;
+        this.dy *= -1;
+      }
+      if(this.y>canvas.height-RADI-MARGE){
+        this.y = canvas.height-RADI-MARGE;
+        this.dy *=-1;
+      }
+
     }
 
     //dibuixa els links al canvas
@@ -75,6 +150,9 @@
       if(this==cercle_seleccionat){
         c.strokeStyle="lightblue";
         c.lineWidth=3;
+      }else if(cercles_previament_seleccionats.has(this)){
+        c.strokeStyle="blue";
+        c.lineWidth=2;
       }else{
         c.strokeStyle="black";
         c.lineWidth=1;
@@ -113,15 +191,21 @@
     c.money = Math.floor(Math.random()*N - N/2);
   }
 
+  //crea links
   for(let i=0;i<N;i++){
     let c = cercles[i];
 
-    let n = 1+Math.floor(3*Math.random());
+    //nombre de links
+    let n = 1+Math.floor(2*Math.random());
     for(let j=0;j<n;j++){
-      let index_random = Math.floor(Math.random()*N);
-      c.crea_link(cercles[index_random]);
-    }
 
+      let link_creat = false;
+      while(link_creat==false){
+        let index_random = Math.floor(Math.random()*N);
+        link_creat = c.crea_link(cercles[index_random]);
+      }
+
+    }
   }
 
   //calcula suma d'arestes
@@ -143,6 +227,7 @@
 
   //mouse
   let cercle_seleccionat=null;
+  let cercles_previament_seleccionats=new Set();
   let sha_mogut = false; //s'ha mogut un cercle? per evitar donar diners
 
   //moure mouse
@@ -173,6 +258,25 @@
       let distance = Math.sqrt(Math.pow(c.x-x,2)+Math.pow(c.y-y,2));
       if(distance<=RADI){
         cercle_seleccionat=c;
+        cercles_previament_seleccionats.add(c);
+        break;
+      }
+    }
+  });
+
+  //seleccionar cercle botó dret
+  canvas.addEventListener("contextmenu",function(event){
+    event.preventDefault();
+
+    let bounding = canvas.getBoundingClientRect();
+    let x = event.clientX - bounding.left;
+    let y = event.clientY - bounding.top;
+
+    for(let i=0;i<cercles.length;i++){
+      let c = cercles[i];
+      let distance = Math.sqrt(Math.pow(c.x-x,2)+Math.pow(c.y-y,2));
+      if(distance<=RADI){
+        cercles_previament_seleccionats.delete(c);
         break;
       }
     }
@@ -218,6 +322,11 @@
     requestAnimationFrame(animate);
     c.clearRect(0,0,canvas.width,canvas.height);
 
+    cercles.forEach(c=>{
+      if(c==cercle_seleccionat) return;
+      if(cercles_previament_seleccionats.has(c)) return;
+      c.update_state();
+    });
     cercles.forEach(c=>c.dibuixa_links() );
     cercles.forEach(c=>c.dibuixa()       );
   })();
